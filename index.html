@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rastreamento de Carga</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "config.js": "./config.js",
+      "utils.js": "./utils.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <header>
+    <h1>Rastreamento de Carga</h1>
+    <img src="transforma logo.png" alt="TRANSforma Logo" style="max-width: 200px; margin-top: 10px; position: absolute; left: 10px;">
+  </header>
+
+  <main>
+    <section id="dashboard">
+      <h2>Dashboard</h2>
+      <div class="dashboard-container">
+        <div class="chart-container">
+          <h3>Cargas por Tipo de Carga</h3>
+          <canvas id="chart-tipos-carga"></canvas>
+        </div>
+        <div class="chart-container">
+          <h3>Cargas Próximos ao Vencimento</h3>
+          <canvas id="chart-proximos-vencimento"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section id="listagem-containers">
+      <h2>Listagem de Cargas</h2>
+      <div id="filtros">
+        <label for="filtro-id">ID:</label>
+        <input type="text" id="filtro-id">
+        <label for="filtro-data-chegada">Data de Chegada:</label>
+        <input type="date" id="filtro-data-chegada">
+        <label for="filtro-data-saida">Data de Saída:</label>
+        <input type="date" id="filtro-data-saida">
+        <label for="filtro-cliente">Cliente:</label>
+        <input type="text" id="filtro-cliente">
+        <label for="filtro-tipo-carga">Tipo de Carga:</label>
+        <input type="text" id="filtro-tipo-carga">
+        <button id="btn-filtrar">Filtrar</button>
+        <button id="btn-limpar-filtro">Limpar Filtro</button>
+      </div>
+
+      <table id="tabela-containers">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Tipo de Carga</th>
+            <th onclick="sortTable('tabela-containers', 'data_chegada')" style="cursor: pointer;">Data de Chegada</th>
+            <th onclick="sortTable('tabela-containers', 'data_saida')" style="cursor: pointer;">Data de Saída</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Os dados serão inseridos aqui via JavaScript -->
+        </tbody>
+      </table>
+    </section>
+
+    <section id="containers-vencidos">
+      <h2>Cargas Vencidas</h2>
+      <table id="tabela-containers-vencidos">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Tipo de Carga</th>
+            <th onclick="sortTable('tabela-containers-vencidos', 'data_chegada')" style="cursor: pointer;">Data de Chegada</th>
+            <th onclick="sortTable('tabela-containers-vencidos', 'data_saida')" style="cursor: pointer;">Data de Saída</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Os dados serão inseridos aqui via JavaScript -->
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2024 Rastreamento de Carga</p>
+  </footer>
+
+  <!-- Floating Button -->
+  <button id="add-container-button">+</button>
+
+  <!-- Modal de Adição -->
+  <div id="addModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="addCloseButton">&times;</span>
+      <h2>Adicionar Carga</h2>
+      <form id="addForm">
+        <label for="addIdCarga">ID da Carga:</label>
+        <input type="text" id="addIdCarga" name="addIdCarga" required>
+        <label for="addCliente">Cliente:</label>
+        <input type="text" id="addCliente" name="addCliente" required>
+        <label for="addTipoCarga">Tipo de Carga:</label>
+        <input type="text" id="addTipoCarga" name="addTipoCarga" required>
+        <label for="addDataChegada">Data de Chegada:</label>
+        <input type="date" id="addDataChegada" name="addDataChegada" required>
+        <label for="addDataSaida">Data de Saída:</label>
+        <input type="date" id="addDataSaida" name="addDataSaida" required>
+        <button type="submit" id="addSubmitButton">Registrar Entrada</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de Edição -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="editCloseButton">&times;</span>
+      <h2>Editar Carga</h2>
+      <form id="editForm">
+        <label for="editIdCarga">ID da Carga:</label>
+        <input type="text" id="editIdCarga" name="editIdCarga" readonly>
+        <label for="editCliente">Cliente:</label>
+        <input type="text" id="editCliente" name="editCliente">
+        <label for="editTipoCarga">Tipo de Carga:</label>
+        <input type="text" id="editTipoCarga" name="editTipoCarga">
+        <label for="editDataChegada">Data de Chegada:</label>
+        <input type="date" id="editDataChegada" name="editDataChegada">
+        <label for="editDataSaida">Data de Saída:</label>
+        <input type="date" id="editDataSaida" name="editDataSaida">
+        <button type="submit" id="editSubmitButton">Salvar Alterações</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmação de Exclusão -->
+  <div id="deleteConfirmationModal" class="modal">
+    <div class="modal-content">
+      <h2>Confirmar Exclusão</h2>
+      <p>Tem certeza de que deseja excluir este container?</p>
+      <button id="confirmDeleteButton">Sim, Excluir</button>
+      <button id="cancelDeleteButton">Cancelar</button>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
