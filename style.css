@@ -7,8 +7,8 @@ body {
 }
 
 header {
-  background-color: #333;
-  color: #fff;
+  background-color: white;
+  color: black;
   padding: 1em 0;
   text-align: center;
   display: flex;
@@ -118,22 +118,18 @@ footer {
   color: #fff;
 }
 
-/* Estilos para tornar a página responsiva */
 @media (max-width: 768px) {
   #filtros {
     flex-direction: column;
   }
-
   #filtros input {
     width: 100%;
   }
-
   .chart-container {
     width: 100%;
   }
 }
 
-/* Estilos para os botões de editar e excluir */
 table button {
   margin-right: 5px;
   padding: 5px 10px;
@@ -153,7 +149,6 @@ table button:last-child {
   border: none;
 }
 
-/* Estilos para o modal de edição */
 .modal {
   display: none;
   position: fixed;
@@ -186,7 +181,6 @@ table button:last-child {
   cursor: pointer;
 }
 
-/* Estilos para o formulário de edição */
 #editForm {
   display: flex;
   flex-direction: column;
@@ -207,7 +201,6 @@ table button:last-child {
   box-sizing: border-box;
 }
 
-/* Estilos para o modal de confirmação de exclusão */
 #deleteConfirmationModal .modal-content {
   text-align: center;
 }
@@ -216,12 +209,10 @@ table button:last-child {
   margin: 10px;
 }
 
-/* Estilos para linhas vencidas */
 table tr.vencido {
-  background-color: rgba(255, 0, 0, 0.1); 
+  background-color: rgba(255, 0, 0, 0.1);
 }
 
-/* Estilos para o botão flutuante */
 #add-container-button {
   position: fixed;
   bottom: 20px;
@@ -243,25 +234,18 @@ table tr.vencido {
   background-color: #449d44;
 }
 
-/* Adicionado para overflow da tabela em dispositivos menores */
 #listagem-containers {
   overflow-x: auto;
 }
 
 #tabela-containers {
-  min-width: 600px; 
+  min-width: 600px;
 }
 
-/* Adicionado para overflow da tabela de containers vencidos em dispositivos menores */
 #containers-vencidos {
   overflow-x: auto;
 }
 
 #tabela-containers-vencidos {
-  min-width: 600px; 
-}
-
-/* Restringe a movimentação da rolagem apenas à seção de listagem de containers */
-#listagem-containers {
-  overflow-x: auto;
+  min-width: 600px;
 }
