@@ -81,11 +81,35 @@ th {
   background-color: #f2f2f2;
 }
 
+#filtros-container {
+  background-color: #f2f2f2;
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  overflow: hidden; 
+  transition: height 0.3s ease; 
+}
+
+#filtros-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #ddd;
+  cursor: pointer;
+  border-bottom: 1px solid #ccc;
+}
+
+#filtros-header h3 {
+  margin: 0;
+  font-size: 1.1em;
+}
+
 #filtros {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 20px;
+  padding: 15px;
 }
 
 #filtros label {
@@ -94,6 +118,25 @@ th {
 
 #filtros input {
   width: 150px;
+}
+
+#toggle-filtros-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+
+#toggle-filtros-button svg {
+  width: 20px;
+  height: 20px;
+  fill: #555;
+  transition: transform 0.3s ease; 
+}
+
+#toggle-filtros-button.active svg {
+  transform: rotate(180deg); 
 }
 
 #dashboard {
@@ -118,18 +161,22 @@ footer {
   color: #fff;
 }
 
+/* Estilos para tornar a página responsiva */
 @media (max-width: 768px) {
   #filtros {
     flex-direction: column;
   }
+
   #filtros input {
     width: 100%;
   }
+
   .chart-container {
     width: 100%;
   }
 }
 
+/* Estilos para os botões de editar e excluir */
 table button {
   margin-right: 5px;
   padding: 5px 10px;
@@ -149,6 +196,7 @@ table button:last-child {
   border: none;
 }
 
+/* Estilos para o modal de edição */
 .modal {
   display: none;
   position: fixed;
@@ -181,6 +229,7 @@ table button:last-child {
   cursor: pointer;
 }
 
+/* Estilos para o formulário de edição */
 #editForm {
   display: flex;
   flex-direction: column;
@@ -201,6 +250,7 @@ table button:last-child {
   box-sizing: border-box;
 }
 
+/* Estilos para o modal de confirmação de exclusão */
 #deleteConfirmationModal .modal-content {
   text-align: center;
 }
@@ -209,10 +259,12 @@ table button:last-child {
   margin: 10px;
 }
 
+/* Estilos para linhas vencidas */
 table tr.vencido {
-  background-color: rgba(255, 0, 0, 0.1);
+  background-color: rgba(255, 0, 0, 0.1); 
 }
 
+/* Estilos para o botão flutuante */
 #add-container-button {
   position: fixed;
   bottom: 20px;
@@ -221,9 +273,9 @@ table tr.vencido {
   color: white;
   border: none;
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  font-size: 24px;
+  width: 57.5px;
+  height: 57.5px;
+  font-size: 27.6px;
   text-align: center;
   cursor: pointer;
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
@@ -234,18 +286,191 @@ table tr.vencido {
   background-color: #449d44;
 }
 
+/* Adicionado para overflow da tabela em dispositivos menores */
 #listagem-containers {
   overflow-x: auto;
 }
 
 #tabela-containers {
-  min-width: 600px;
+  min-width: 600px; 
 }
 
+/* Adicionado para overflow da tabela de containers vencidos em dispositivos menores */
 #containers-vencidos {
   overflow-x: auto;
 }
 
-#tabela-containers-vencidos {
-  min-width: 600px;
+/* Apple-inspired Table Styles */
+#tabela-containers, #tabela-containers-vencidos {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-top: 15px;
+  background-color: #fff;
+}
+
+#tabela-containers thead, #tabela-containers-vencidos thead {
+  background-color: #f9f9f9;
+  color: #333;
+  font-weight: 500;
+}
+
+#tabela-containers th,
+#tabela-containers td, #tabela-containers-vencidos th,
+#tabela-containers-vencidos td {
+  padding: 10px 15px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+#tabela-containers th:first-child,
+#tabela-containers td:first-child, #tabela-containers-vencidos th:first-child,
+#tabela-containers-vencidos td:first-child {
+  border-left: none;
+}
+
+#tabela-containers th:last-child,
+#tabela-containers td:last-child, #tabela-containers-vencidos th:last-child,
+#tabela-containers-vencidos td:last-child {
+  border-right: none;
+}
+
+#tabela-containers th, #tabela-containers-vencidos th {
+  position: relative;
+  padding-right: 30px;
+}
+
+#tabela-containers th button, #tabela-containers-vencidos th button {
+  background: none;
+  border: none;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+  padding: 5px;
+  border-radius: 4px;
+}
+
+#tabela-containers th button:hover, #tabela-containers-vencidos th button:hover {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+#tabela-containers th button svg, #tabela-containers-vencidos th button svg {
+  width: 14px;
+  height: 14px;
+  fill: #888;
+}
+
+#tabela-containers tbody tr:last-child td, #tabela-containers-vencidos tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Hover Effect */
+#tabela-containers tbody tr:hover, #tabela-containers-vencidos tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Zebra Stripes (Optional) */
+#tabela-containers tbody tr:nth-child(even), #tabela-containers-vencidos tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* Search Input Styling */
+.table-search-container {
+  padding: 10px;
+  background-color: #f2f2f2;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.table-search-container input[type="text"] {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 200px;
+  box-sizing: border-box;
+}
+
+.table-search-container button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.table-search-container button:hover {
+  background-color: #0056b3;
+}
+
+/* Container for buttons */
+.header-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+/* Style for sort buttons */
+.sort-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+
+.sort-button svg {
+  width: 14px;
+  height: 14px;
+  fill: #888;
+}
+
+/* Estilos para as tabs */
+.tab-container {
+  display: flex;
+  margin-bottom: 20px;
+  background-color: #f2f2f2;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.tab-button {
+  padding: 10px 20px;
+  border: none;
+  background-color: #a7d1ab;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+  flex: 1;
+  text-align: center;
+  color: #333;
+}
+
+.tab-button:hover {
+  background-color: #82c485;
+}
+
+.tab-button.active {
+  background-color: #5cb85c;
+  font-weight: bold;
+  color: white;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
 }

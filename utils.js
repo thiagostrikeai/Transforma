@@ -20,5 +20,8 @@ export function updateChart(chart, labels, data) {
   chart.update();
 }
 
-// A função populateTable será implementada no script.js
-export function populateTable() {}
+export function calculateDaysInCompany(dataChegada) {
+  const chegada = new Date(dataChegada);
+  const hoje = new Date();
+  return Math.floor((hoje - chegada) / (1000 * 60 * 60 * 24));
+}
