@@ -1,256 +1,1171 @@
 <html lang="pt-BR">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rastreamento de Carga</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="importmap">
-  {
-    "imports": {
-      "config.js": "./config.js",
-      "utils.js": "./utils.js"
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Transforma App</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    /* Configurações gerais */
+    html, body {
+      margin: 0;
+      padding: 0;
+      max-width: 100%;
+      overflow-x: hidden;
     }
-  }
+    .gradient-bg {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    }
+    .urgent {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+      100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+    }
+    .status-overdue { background-color: #fee2e2; color: #dc2626; }
+    .status-warning { background-color: #fef3c7; color: #d97706; }
+    .status-ok { background-color: #dcfce7; color: #16a34a; }
+    .status-neutral { background-color: #e0e7ff; color: #4f46e5; }
+    .file-preview { max-width: 100px; max-height: 100px; object-fit: cover; border-radius: 4px; margin-right: 10px; margin-bottom: 10px; }
+    .file-item { display: flex; align-items: center; margin-bottom: 8px; padding: 8px; background-color: #f8fafc; border-radius: 4px; }
+    .modal-content { max-height: 90vh; overflow-y: auto; }
+    /* Toast de notificações */
+    #notificationContainer {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000; /* z-index aumentado para ficar acima do modal */
+    }
+    .notification {
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    /* Dropdown (Notificações) */
+    #notificationsDropdown {
+      display: none;
+      position: absolute;
+      top: 2.5rem;
+      right: 0;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 0.25rem;
+      width: 300px;
+      z-index: 100;
+      overflow-wrap: break-word;
+    }
+    #notificationsDropdown.active { display: block; }
+    @media (max-width: 640px) {
+      #notificationsDropdown { width: 90%; right: 5%; }
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
+      }
+    }
   </script>
 </head>
-
-<body>
-  <header style="padding: 2.3%;">
-    <img src="Captura de tela 2025-03-27 044542.png" alt="TRANSforma Logo" style="max-width: 230px; margin-bottom: 10px;">
-    <h1>Rastreamento de Carga</h1>
-  </header>
-
-  <main>
-    <!-- Tabs -->
-    <div class="tab-container">
-      <button class="tab-button" onclick="openTab('dashboardTab')">Dashboard</button>
-      <button class="tab-button active" onclick="openTab('all')">Todos</button>
-      <button class="tab-button" onclick="openTab('expired')">Vencidos</button>
-    </div>
-
-    <!-- All Containers Section -->
-    <section id="all" class="tab-content active">
-      <section id="listagem-containers">
-        <h2>Listagem de Cargas</h2>
-
-        <div id="filtros-container">
-          <div id="filtros-header">
-            <h3>Filtros</h3>
-            <button id="toggle-filtros-button">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path d="M7 14l5-5 5 5z" /></svg>
+<body class="bg-gray-100 font-sans">
+  <!-- ============== HEADER ============== -->
+  <header class="bg-blue-600 text-white shadow-lg w-full">
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <!-- Mobile Header -->
+      <div class="flex flex-col md:hidden">
+        <div class="flex items-center justify-center mb-4">
+          <img src="/ChatGPT Image Apr 3, 2025, 10_43_50 PM.png" alt="Logo" class="h-12 w-12">
+          <h1 class="text-2xl font-bold text-center ml-2">Transforma App</h1>
+        </div>
+        <div class="flex justify-between items-center mt-2">
+          <div class="flex items-center">
+            <img id="userAvatarMobile" class="h-8 w-8 rounded-full mr-2 bg-white/20" src="" alt="Avatar" style="display: none;">
+            <span id="userGreetingMobile" class="text-lg font-medium"></span>
+          </div>
+          <div class="flex space-x-2">
+            <button id="notificationsBtnMobile" class="bg-blue-700 p-2 rounded-full hover:bg-blue-800 transition" aria-label="Notificações">
+              <i class="fas fa-bell"></i>
+            </button>
+            <button id="logoutBtnMobile" class="bg-white text-blue-600 px-3 py-1 rounded-lg font-medium hover:bg-blue-50 transition" aria-label="Sair" style="display: none;">
+              <i class="fas fa-sign-out-alt mr-1"></i>Sair
             </button>
           </div>
+        </div>
+      </div>
+      <!-- Desktop Header -->
+      <div class="hidden md:flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+          <img src="logoTransforma.png" alt="Logo" class="h-12 w-12">
+          <h1 class="text-2xl font-bold">Transforma App</h1>
+        </div>
+        <div class="flex items-center space-x-4" id="headerRightSection">
+          <div class="flex items-center mr-4">
+            <img id="userAvatar" class="h-8 w-8 rounded-full mr-2 bg-white/20" src="" alt="Avatar" style="display: none;">
+            <span id="userGreeting" class="text-lg font-medium"></span>
+          </div>
+          <div class="relative">
+            <button id="notificationsBtn" class="bg-blue-700 p-2 rounded-full hover:bg-blue-800 transition" aria-label="Notificações">
+              <i class="fas fa-bell" aria-hidden="true"></i>
+              <span id="notificationsCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden"></span>
+            </button>
+            <div id="notificationsDropdown" class="shadow-lg">
+              <ul id="notificationsList" class="divide-y divide-gray-200"></ul>
+            </div>
+          </div>
+          <button id="addContainerBtn" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition" aria-label="Adicionar Container">
+            <i class="fas fa-plus mr-2" aria-hidden="true"></i>Adicionar Container
+          </button>
+          <button id="logoutBtn" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition flex items-center" aria-label="Sair">
+            <i class="fas fa-sign-out-alt mr-2"></i>Sair
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
 
-          <div id="filtros">
-            <label for="filtro-id">ID:</label>
-            <input type="text" id="filtro-id">
+  <!-- Botão flutuante (FAB) para mobile -->
+  <button id="addContainerFab" class="md:hidden fixed bottom-4 right-4 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 z-50" aria-label="Adicionar Container (mobile)">
+    <i class="fas fa-plus"></i>
+  </button>
 
-            <label for="filtro-data-chegada">Data de Chegada:</label>
-            <input type="date" id="filtro-data-chegada">
-
-            <label for="filtro-data-saida">Data de Saída:</label>
-            <input type="date" id="filtro-data-saida">
-
-            <label for="filtro-cliente">Cliente:</label>
-            <input type="text" id="filtro-cliente">
-
-            <label for="filtro-tipo-carga">Tipo de Carga:</label>
-            <input type="text" id="filtro-tipo-carga">
-
-            <button id="btn-filtrar">Filtrar</button>
-            <button id="btn-limpar-filtro">Limpar Filtro</button>
+  <!-- ============== CONTEÚDO DO APP (apenas se logado) ============== -->
+  <div id="appContent" class="min-h-screen pt-4 md:pt-0">
+    <main class="max-w-7xl mx-auto px-4 py-8">
+      <!-- Cards de Estatísticas -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex justify-between items-center">
+            <div>
+              <p class="text-gray-500">Containers Ativos</p>
+              <h3 id="activeContainers" class="text-3xl font-bold">0</h3>
+            </div>
+            <div class="bg-blue-100 p-3 rounded-full">
+              <i class="fas fa-box text-blue-600 text-xl" aria-hidden="true"></i>
+            </div>
           </div>
         </div>
-
-        <div class="table-search-container">
-          <input type="text" id="all-search" placeholder="Buscar...">
-          <button onclick="searchTable('tabela-containers', document.getElementById('all-search').value)">Buscar</button>
-        </div>
-        <table id="tabela-containers">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Cliente</th>
-              <th>Tipo de Carga</th>
-              <th>
-                Data de Chegada
-                <div class="header-buttons">
-                  <button class="sort-button" onclick="sortTable('tabela-containers', 'dataChegada')">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                      <path d="M12 21l-8-9h6v-12h4v12h6l-8 9z" /></svg>
-                  </button>
-                </div>
-              </th>
-              <th>
-                Data de Saída
-                <div class="header-buttons">
-                  <button class="sort-button" onclick="sortTable('tabela-containers', 'dataSaida')">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                      <path d="M12 21l-8-9h6v-12h4v12h6l-8 9z" /></svg>
-                  </button>
-                </div>
-              </th>
-              <th>
-                Dias
-                <div class="header-buttons">
-                  <button class="sort-button" onclick="sortTable('tabela-containers', 'diasNaEmpresa')">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                      <path d="M12 21l-8-9h6v-12h4v12h6l-8 9z" /></svg>
-                  </button>
-                </div>
-              </th>
-              <th>Status</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Os dados serão inseridos aqui via JavaScript -->
-          </tbody>
-        </table>
-      </section>
-    </section>
-
-    <!-- Expired Containers Section -->
-    <section id="expired" class="tab-content">
-      <section id="containers-vencidos">
-        <h2>Cargas Vencidas</h2>
-        <div class="table-search-container">
-          <input type="text" id="expired-search" placeholder="Buscar...">
-          <button onclick="searchTable('tabela-containers-vencidos', document.getElementById('expired-search').value)">Buscar</button>
-        </div>
-        <table id="tabela-containers-vencidos">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Cliente</th>
-              <th>Tipo de Carga</th>
-              <th>
-                Data de Chegada
-                <div class="header-buttons">
-                  <button class="sort-button" onclick="sortTable('tabela-containers-vencidos', 'dataChegada')">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                      <path d="M12 21l-8-9h6v-12h4v12h6l-8 9z" /></svg>
-                  </button>
-                </div>
-              </th>
-              <th>
-                Data de Saída
-                <div class="header-buttons">
-                  <button class="sort-button" onclick="sortTable('tabela-containers-vencidos', 'dataSaida')">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                      <path d="M12 21l-8-9h6v-12h4v12h6l-8 9z" /></svg>
-                  </button>
-                </div>
-              </th>
-              <th>
-                Dias na Empresa
-                <div class="header-buttons">
-                  <button class="sort-button" onclick="sortTable('tabela-containers-vencidos', 'diasNaEmpresa')">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                      <path d="M12 21l-8-9h6v-12h4v12h6l-8 9z" /></svg>
-                  </button>
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Os dados serão inseridos aqui via JavaScript -->
-          </tbody>
-        </table>
-      </section>
-    </section>
-
-    <section id="dashboardTab" class="tab-content">
-      <section id="dashboard">
-        <h2>Dashboard</h2>
-        <div class="dashboard-container">
-          <div class="chart-container">
-            <h3>Cargas por Cliente</h3>
-            <canvas id="chart-tipos-carga"></canvas>
-          </div>
-
-          <div class="chart-container">
-            <h3>Cargas Próximos ao Vencimento</h3>
-            <canvas id="chart-proximos-vencimento"></canvas>
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex justify-between items-center">
+            <div>
+              <p class="text-gray-500">No Prazo</p>
+              <h3 id="onTimeContainers" class="text-3xl font-bold">0</h3>
+            </div>
+            <div class="bg-green-100 p-3 rounded-full">
+              <i class="fas fa-check-circle text-green-600 text-xl" aria-hidden="true"></i>
+            </div>
           </div>
         </div>
-      </section>
-    </section>
-  </main>
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex justify-between items-center">
+            <div>
+              <p class="text-gray-500">Atenção</p>
+              <h3 id="warningContainers" class="text-3xl font-bold">0</h3>
+            </div>
+            <div class="bg-yellow-100 p-3 rounded-full">
+              <i class="fas fa-exclamation-triangle text-yellow-600 text-xl" aria-hidden="true"></i>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex justify-between items-center">
+            <div>
+              <p class="text-gray-500">Vencidos</p>
+              <h3 id="overdueContainers" class="text-3xl font-bold">0</h3>
+            </div>
+            <div class="bg-red-100 p-3 rounded-full">
+              <i class="fas fa-times-circle text-red-600 text-xl" aria-hidden="true"></i>
+            </div>
+          </div>
+        </div>
+      </div>
 
-  <footer>
-    <p>&copy; 2024 Rastreamento de Carga</p>
-  </footer>
+      <!-- Filtros e Busca -->
+      <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div class="relative flex-grow">
+            <i class="fas fa-search absolute left-3 top-3 text-gray-400" aria-hidden="true"></i>
+            <input id="searchInput" type="text" placeholder="Buscar container..." class="pl-10 pr-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-4">
+            <select id="statusFilter" class="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Filtrar por status">
+              <option value="all">Todos os status</option>
+              <option value="ontime">No prazo</option>
+              <option value="warning">Próximo do vencimento</option>
+              <option value="overdue">Vencido</option>
+              <option value="ready">Pronto para retirada</option>
+            </select>
+            <select id="companyFilter" class="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Filtrar por empresa">
+              <option value="all">Todas as empresas</option>
+            </select>
+            <select id="urgencyFilter" class="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Filtrar por urgência">
+              <option value="all">Todas as urgências</option>
+              <option value="Alta">Alta</option>
+              <option value="Média">Média</option>
+              <option value="Baixa">Baixa</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
-  <!-- Floating Button -->
-  <button id="add-container-button">+</button>
+      <!-- Tabela de Containers -->
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empresa</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Entrada</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dias no Local</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prazo</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Urgência</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="containersTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
 
-  <!-- Modal de Adição -->
-  <div id="addModal" class="modal">
-    <div class="modal-content">
-      <span class="close" id="addCloseButton">&times;</span>
-      <h2>Adicionar Carga</h2>
-      <form id="addForm">
-        <label for="addIdCarga">ID da Carga:</label>
-        <input type="text" id="addIdCarga" name="addIdCarga" required>
+  <!-- NOTIFICAÇÕES (Toast) -->
+  <div id="notificationContainer"></div>
 
-        <label for="addCliente">Cliente:</label>
-        <input type="text" id="addCliente" name="addCliente" required>
-
-        <label for="addTipoCarga">Tipo de Carga:</label>
-        <input type="text" id="addTipoCarga" name="addTipoCarga" required>
-
-        <label for="addDataChegada">Data de Chegada:</label>
-        <input type="date" id="addDataChegada" name="addDataChegada" required>
-
-        <label for="addDataSaida">Data de Saída:</label>
-        <input type="date" id="addDataSaida" name="addDataSaida" required>
-
-        <button type="submit" id="addSubmitButton">Registrar Entrada</button>
-      </form>
+  <!-- MODAL: Add/Edit Container -->
+  <div id="containerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl modal-content">
+      <div class="flex justify-between items-center border-b px-6 py-4">
+        <h3 id="modalTitle" class="text-xl font-bold">Adicionar Novo Container</h3>
+        <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700" aria-label="Fechar Modal">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <form id="containerForm" novalidate>
+          <input type="hidden" id="containerId" />
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="company" class="block text-gray-700 mb-2 flex items-center justify-between">
+                <span>Empresa</span>
+                <button id="addCompanyBtn" type="button" class="text-blue-600 hover:text-blue-800 flex items-center space-x-1 text-sm" aria-label="Nova Empresa" title="Nova Empresa">
+                  <i class="fas fa-plus"></i>
+                  <span>Nova Empresa</span>
+                </button>
+              </label>
+              <select id="company" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              </select>
+            </div>
+            <div>
+              <label for="containerNumber" class="block text-gray-700 mb-2">Número do Container</label>
+              <input id="containerNumber" type="text" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required/>
+            </div>
+            <div>
+              <label for="entryDate" class="block text-gray-700 mb-2">Data de Entrada</label>
+              <input id="entryDate" type="date" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required/>
+            </div>
+            <div>
+              <label for="deadlineDays" class="block text-gray-700 mb-2">Prazo de Entrega (dias)</label>
+              <input id="deadlineDays" type="number" min="1" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required/>
+            </div>
+            <div>
+              <label for="urgency" class="block text-gray-700 mb-2">Urgência</label>
+              <select id="urgency" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <option value="Baixa">Baixa</option>
+                <option value="Média">Média</option>
+                <option value="Alta">Alta</option>
+              </select>
+            </div>
+            <div>
+              <label for="status" class="block text-gray-700 mb-2">Status</label>
+              <select id="status" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <option value="Em análise">Em análise</option>
+                <option value="Em reparo">Em reparo</option>
+                <option value="Aguardando peças">Aguardando peças</option>
+                <option value="Pronto para retirada">Pronto para retirada</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label for="notes" class="block text-gray-700 mb-2">Observações</label>
+              <textarea id="notes" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3"></textarea>
+            </div>
+            <div class="md:col-span-2">
+              <label for="fileInput" class="block text-gray-700 mb-2">Anexar Arquivos</label>
+              <input type="file" id="fileInput" multiple class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+              <div id="filePreviewContainer" class="mt-4 flex flex-wrap"></div>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end space-x-4">
+            <button type="button" id="cancelModalBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50" aria-label="Cancelar">Cancelar</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" aria-label="Salvar Container">
+              <span id="submitButtonText">Salvar Container</span>
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
-  <!-- Modal de Edição -->
-  <div id="editModal" class="modal">
-    <div class="modal-content">
-      <span class="close" id="editCloseButton">&times;</span>
-      <h2>Editar Carga</h2>
-      <form id="editForm">
-        <label for="editIdCarga">ID da Carga:</label>
-        <input type="text" id="editIdCarga" name="editIdCarga" readonly>
-
-        <label for="editCliente">Cliente:</label>
-        <input type="text" id="editCliente" name="editCliente">
-
-        <label for="editTipoCarga">Tipo de Carga:</label>
-        <input type="text" id="editTipoCarga" name="editTipoCarga">
-
-        <label for="editDataChegada">Data de Chegada:</label>
-        <input type="date" id="editDataChegada" name="editDataChegada">
-
-        <label for="editDataSaida">Data de Saída:</label>
-        <input type="date" id="editDataSaida" name="editDataSaida">
-
-        <button type="submit" id="editSubmitButton">Salvar Alterações</button>
-      </form>
+  <!-- MODAL: Add Company -->
+  <div id="addCompanyModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl modal-content">
+      <div class="flex justify-between items-center border-b px-6 py-4">
+        <h3 class="text-xl font-bold">Adicionar Nova Empresa</h3>
+        <button id="cancelAddCompanyBtn" class="text-gray-500 hover:text-gray-700" aria-label="Fechar Modal">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <form id="addCompanyForm" novalidate>
+          <div class="grid grid-cols-1 gap-6">
+            <div>
+              <label for="newCompanyName" class="block text-gray-700 mb-2">Nome da Empresa</label>
+              <input id="newCompanyName" type="text" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required/>
+            </div>
+            <div>
+              <label for="newCompanyNotes" class="block text-gray-700 mb-2">Observações</label>
+              <textarea id="newCompanyNotes" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3"></textarea>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end space-x-4">
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" aria-label="Salvar Empresa">
+              Salvar Empresa
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
-  <!-- Modal de Confirmação de Exclusão -->
-  <div id="deleteConfirmationModal" class="modal">
-    <div class="modal-content">
-      <h2>Confirmar Exclusão</h2>
-      <p>Tem certeza de que deseja excluir este container?</p>
-      <button id="confirmDeleteButton">Sim, Excluir</button>
-      <button id="cancelDeleteButton">Cancelar</button>
+  <!-- MODAL: View Details -->
+  <div id="viewDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl modal-content">
+      <div class="flex justify-between items-center border-b px-6 py-4">
+        <h3 class="text-xl font-bold">Detalhes do Container</h3>
+        <button id="closeViewDetailsBtn" class="text-gray-500 hover:text-gray-700" aria-label="Fechar">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <p class="text-gray-600 text-sm">Número do Container</p>
+            <p id="viewContainerNumber" class="font-medium"></p>
+          </div>
+          <div>
+            <p class="text-gray-600 text-sm">Empresa</p>
+            <p id="viewCompany" class="font-medium"></p>
+          </div>
+          <div>
+            <p class="text-gray-600 text-sm">Data de Entrada</p>
+            <p id="viewEntryDate" class="font-medium"></p>
+          </div>
+          <div>
+            <p class="text-gray-600 text-sm">Prazo (dias)</p>
+            <p id="viewDeadline" class="font-medium"></p>
+          </div>
+          <div>
+            <p class="text-gray-600 text-sm">Status</p>
+            <p id="viewStatus" class="font-medium"></p>
+          </div>
+          <div>
+            <p class="text-gray-600 text-sm">Urgência</p>
+            <p id="viewUrgency" class="font-medium"></p>
+          </div>
+          <div class="md:col-span-2">
+            <p class="text-gray-600 text-sm">Observações</p>
+            <p id="viewNotes" class="font-medium whitespace-pre-line"></p>
+          </div>
+          <div class="md:col-span-2">
+            <p class="text-gray-600 text-sm mb-2">Arquivos Anexados</p>
+            <div id="viewFiles" class="flex flex-wrap gap-2"></div>
+          </div>
+        </div>
+      </div>
+      <div class="border-t px-6 py-4 flex justify-end">
+        <button id="closeViewDetailsBtnBottom" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Fechar</button>
+      </div>
     </div>
   </div>
 
-  <script type="module" src="script.js"></script>
+  <!-- MODAL: Authentication (Login) -->
+  <div id="authModal" class="fixed inset-0 flex items-center justify-center z-50 hidden gradient-bg">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden">
+      <div class="p-8 text-center">
+        <div class="flex justify-center mb-8">
+          <img src="transforma caminhao logo.png" alt="Transforma Logo" class="h-24 w-auto" style="width: 150px; height: 150px;">
+        </div>
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Bem-vindo de volta</h1>
+        <form id="authForm" class="space-y-6">
+          <div>
+            <label for="email" class="block text-gray-700 text-sm font-medium mb-2 text-left">Email</label>
+            <input type="email" id="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="seu@email.com">
+          </div>
+          <div>
+            <label for="password" class="block text-gray-700 text-sm font-medium mb-2 text-left">Senha</label>
+            <input type="password" id="password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="••••••••">
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <input id="remember" type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+              <label for="remember" class="ml-2 block text-sm text-gray-700">Lembrar-me</label>
+            </div>
+            <a href="#" onclick="showForgotPassword()" class="text-sm text-blue-600 hover:text-blue-500">Esqueceu a senha?</a>
+          </div>
+          <button type="submit" class="w-full gradient-bg text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 transition shadow-lg">Entrar</button>
+        </form>
+        <div class="mt-6 text-center">
+          <p class="text-sm text-gray-600">Novo por aqui? <a href="#" onclick="showCreateAccount()" class="text-blue-600 hover:text-blue-500 font-medium">Crie uma conta</a></p>
+        </div>
+      </div>
+    </div>
+
+  <!-- MODAL: Recuperar Senha -->
+  <div id="forgotPasswordModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+      <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+          <div class="flex justify-center mb-4">
+            <img src="transforma caminhao logo.png" alt="Transforma Logo" class="h-20 w-auto">
+          </div>
+          <h3 class="text-lg leading-6 font-medium text-gray-900 text-center" id="modal-title">
+            Recuperar Senha
+          </h3>
+          <div class="mt-2">
+            <p class="text-sm text-gray-500 text-center">
+              Informe seu email para receber as instruções de recuperação.
+            </p>
+            <input type="email" id="resetEmail" class="mt-4 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="seu@email.com">
+          </div>
+        </div>
+        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <button id="resetPasswordBtn" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+            Enviar
+          </button>
+          <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm" onclick="closeForgotPassword()">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Criar Conta -->
+  <div id="createAccountModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+      <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+          <div class="flex justify-center mb-4">
+            <img src="transforma caminhao logo.png" alt="Transforma Logo" class="h-20 w-auto">
+          </div>
+          <h3 class="text-lg leading-6 font-medium text-gray-900 text-center" id="modal-title">
+            Criar Conta
+          </h3>
+          <div class="mt-2">
+            <input type="text" id="name" class="mt-4 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Nome Completo">
+            <input type="email" id="newEmail" class="mt-4 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="seu@email.com">
+            <input type="password" id="newPassword" class="mt-4 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="••••••••">
+          </div>
+        </div>
+        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <button id="createAccountBtn" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+            Criar
+          </button>
+          <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm" onclick="closeCreateAccount()">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT PRINCIPAL -->
+  <script type="module">
+    import { createClient } from '@supabase/supabase-js';
+
+    (function () {
+      const supabaseUrl = "https://szohuibtrgcrrzqvycdq.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6b2h1aWJ0cmdjcnJ6cXZ5Y2RxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMwNTI3MzEsImV4cCI6MjA1ODYyODczMX0.eK_pkVHsKjbUU-UCQXka40W5h5oeZAoGBrYsp7GP48I";
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+      const allowedFileTypes = ["image/jpeg", "image/png", "application/pdf"];
+
+      let companies = [];
+      let containers = [];
+      let currentFiles = [];
+      let currentUser = null;
+      let bucketChecked = false;
+
+      const authModal = document.getElementById("authModal");
+      const authForm = document.getElementById("authForm");
+      const appContent = document.getElementById("appContent");
+
+      async function ensureBucketExists() {
+        bucketChecked = true;
+      }
+
+      async function loadCurrentUser() {
+        const { data: { user } } = await supabase.auth.getUser();
+        currentUser = user;
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          const displayName = profile?.full_name || user.email?.split('@')[0] || 'Usuário';
+          document.getElementById('userGreeting').textContent = `Olá, ${displayName}!`;
+          document.getElementById('userGreetingMobile').textContent = `Olá, ${displayName}!`;
+
+          if (profile?.avatar_url) {
+            const userAvatar = document.getElementById('userAvatar');
+            const userAvatarMobile = document.getElementById('userAvatarMobile');
+            userAvatar.src = profile.avatar_url;
+            userAvatarMobile.src = profile.avatar_url;
+            userAvatar.style.display = 'block';
+            userAvatarMobile.style.display = 'block';
+          }
+        }
+      }
+
+      async function signInUser(email, password) {
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+          if (error) {
+            const lowerMsg = error.message.toLowerCase();
+            if (lowerMsg.includes("invalid login credentials")) {
+              showNotification("Senha incorreta. Tente novamente ou use 'Esqueceu a senha?'");
+            } else if (lowerMsg.includes("user not found")) {
+              showNotification("Email não encontrado. Verifique ou cadastre uma nova conta.");
+            } else {
+              showNotification("Erro no login: " + error.message);
+            }
+            return null;
+          }
+          return data.user;
+        } catch (error) {
+          showNotification("Erro no login: " + error.message);
+          return null;
+        }
+      }
+
+      async function signUpUser(email, password, name) {
+        try {
+          const { data, error } = await supabase.auth.signUp({ email, password });
+          if (error) {
+            const lowerMsg = error.message.toLowerCase();
+            if (lowerMsg.includes("already registered") || lowerMsg.includes("duplicate")) {
+              showNotification("Este email já está cadastrado. Tente recuperar a senha.");
+            } else {
+              showNotification("Erro no registro: " + error.message);
+            }
+            return null;
+          }
+          // Atualiza o display name no perfil do usuário
+          if (data.user) {
+            const { error: updateError } = await supabase.from('profiles').update({ full_name: name }).eq('id', data.user.id);
+            if (updateError) {
+              console.error("Erro ao atualizar o display name:", updateError);
+              showNotification("Conta criada, mas houve erro ao atualizar seu nome.");
+            }
+          }
+          showNotification("Cadastro realizado! Verifique seu email.");
+          return data.user;
+        } catch (error) {
+          showNotification("Erro no registro: " + error.message);
+          return null;
+        }
+      }
+
+      async function signOutUser() {
+        try {
+          const { error } = await supabase.auth.signOut();
+          if (error) throw error;
+          currentUser = null;
+          containers = [];
+          renderContainers();
+          appContent.classList.add("hidden");
+          authModal.classList.remove("hidden");
+          showNotification("Você saiu da conta.");
+        } catch (error) {
+          showNotification("Erro ao sair: " + error.message);
+        }
+      }
+
+      authForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        if (!email || !password) {
+          showNotification("Por favor, preencha seu email e senha para entrar.");
+          return;
+        }
+
+        const user = await signInUser(email, password);
+        if (user) {
+          currentUser = user;
+          await loadCurrentUser();  // Atualiza o display name e avatar no cabeçalho
+          authModal.classList.add("hidden");
+          appContent.classList.remove("hidden");
+          document.getElementById('logoutBtn').classList.remove('hidden');
+          document.getElementById('logoutBtnMobile').classList.remove('hidden');
+          await fetchCompanies(); // Popula o dropdown de empresas
+          await fetchContainers();
+          showNotification("Login realizado com sucesso!");
+        }
+      });
+
+      document.getElementById('logoutBtn').addEventListener('click', signOutUser);
+      document.getElementById('logoutBtnMobile').addEventListener('click', signOutUser);
+
+      async function checkAuthAndInit() {
+        await loadCurrentUser();
+        if (!currentUser) {
+          authModal.classList.remove("hidden");
+          appContent.classList.add("hidden");
+        } else {
+          authModal.classList.add("hidden");
+          appContent.classList.remove("hidden");
+          await fetchContainers();
+          await fetchCompanies();
+        }
+      }
+
+      async function initializeApp() {
+        await checkAuthAndInit();
+      }
+
+      async function fetchCompanies() {
+        try {
+          const { data, error } = await supabase
+            .from('companies')
+            .select('*')
+            .order('name');
+          if (error) throw error;
+          companies = data.map(c => c.name);
+          populateCompanyDropdown();
+          return companies;
+        } catch (error) {
+          console.error("Error fetching companies:", error);
+          showNotification("Erro ao carregar empresas: " + error.message);
+          return [];
+        }
+      }
+
+      async function addCompanyToSupabase(companyData) {
+        try {
+          const { data, error } = await supabase
+            .from('companies')
+            .insert([{ name: companyData.name, notes: companyData.notes }])
+            .select();
+          if (error) throw error;
+          await fetchCompanies();
+          showNotification(`Empresa "${companyData.name}" adicionada com sucesso!`);
+          addNotification(`Nova empresa cadastrada: ${companyData.name}`);
+          return data;
+        } catch (error) {
+          console.error("Error adding company:", error);
+          showNotification("Erro ao adicionar empresa: " + error.message);
+          throw error;
+        }
+      }
+
+      async function uploadFile(file, containerId) {
+        try {
+          await ensureBucketExists();
+          const fileExt = file.name.split('.').pop();
+          const uniqueName = crypto.randomUUID();
+          const fileName = `${containerId}/${uniqueName}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage.from('files').upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+          if (uploadError) throw uploadError;
+          const { data: { publicUrl } } = supabase.storage.from('files').getPublicUrl(fileName);
+          return { path: fileName, url: publicUrl, name: file.name, size: file.size, type: file.type };
+        } catch (error) {
+          console.error('Error uploading file:', error);
+          showNotification("Erro ao fazer upload do arquivo: " + error.message);
+          throw error;
+        }
+      }
+
+      async function saveContainerToSupabase(containerData, isEdit = false) {
+        try {
+          let result;
+          let uploadedFiles = [];
+          if (!containerData.id) {
+            containerData.id = crypto.randomUUID();
+          }
+          if (currentFiles.length > 0) {
+            for (const file of currentFiles) {
+              try {
+                const fileData = await uploadFile(file, containerData.id);
+                uploadedFiles.push(fileData);
+              } catch (error) {
+                console.error('Error uploading file:', error);
+                showNotification(`Erro ao fazer upload do arquivo ${file.name}: ${error.message}`);
+                continue;
+              }
+            }
+          }
+          if (isEdit && containerData.id) {
+            const { data: existingContainer } = await supabase
+              .from('containers')
+              .select('files')
+              .eq('id', containerData.id)
+              .single();
+            if (existingContainer?.files) {
+              uploadedFiles = [...existingContainer.files, ...uploadedFiles];
+            }
+          }
+          if (isEdit) {
+            result = await supabase
+              .from('containers')
+              .update([{ ...containerData, files: uploadedFiles }])
+              .eq('id', containerData.id)
+              .select();
+          } else {
+            result = await supabase
+              .from('containers')
+              .insert([{ ...containerData, files: uploadedFiles }])
+              .select();
+          }
+          if (result.error) throw result.error;
+          currentFiles = [];
+          await fetchContainers();
+          showNotification(`Container ${isEdit ? 'atualizado' : 'adicionado'} com sucesso!`);
+          return result.data;
+        } catch (error) {
+          console.error("Error saving container:", error);
+          showNotification("Erro ao salvar container: " + error.message);
+          throw error;
+        }
+      }
+
+      async function fetchContainers() {
+        try {
+          const { data, error } = await supabase
+            .from('containers')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (error) throw error;
+          containers = data;
+          renderContainers();
+          return data;
+        } catch (error) {
+          console.error("Error fetching containers:", error);
+          showNotification("Erro ao carregar containers: " + error.message);
+          return [];
+        }
+      }
+
+      function showNotification(message, duration = 3000) {
+        const notif = document.createElement("div");
+        notif.className = "notification";
+        notif.textContent = message;
+        document.getElementById("notificationContainer").appendChild(notif);
+        setTimeout(() => { notif.remove(); }, duration);
+      }
+      function addNotification(text) {
+        showNotification(text);
+      }
+
+      function renderContainers(filteredContainers = null) {
+        const list = filteredContainers || containers;
+        document.getElementById("containersTableBody").innerHTML = '';
+        let onTimeCount = 0, warningCount = 0, overdueCount = 0;
+        list.forEach(container => {
+          const entryDate = new Date(container.entry_date);
+          const today = new Date();
+          const dueDate = new Date(entryDate);
+          dueDate.setDate(entryDate.getDate() + (container.deadline_days || 0));
+          const daysIn = Math.floor((today - entryDate) / (1000*60*60*24));
+          const daysRemaining = Math.floor((dueDate - today) / (1000*60*60*24));
+          let statusClass = '', statusText = '';
+          if (daysRemaining < 0) { statusClass = "status-overdue"; statusText = `Vencido há ${Math.abs(daysRemaining)} dias`; overdueCount++; }
+          else if (daysRemaining <= 7) { statusClass = "status-warning"; statusText = `Vence em ${daysRemaining} dias`; warningCount++; }
+          else { statusClass = "status-ok"; statusText = `No prazo (${daysRemaining} dias)`; onTimeCount++; }
+          if (container.status === "Pronto para retirada") { statusClass = "status-neutral"; statusText = "Pronto para retirada"; }
+          const urgencyClass = container.urgency === "Alta" ? "text-red-600" : container.urgency === "Média" ? "text-yellow-600" : "text-green-600";
+          const row = document.createElement("tr");
+          row.className = daysRemaining < 0 ? "bg-red-50" : daysRemaining <= 3 ? "bg-yellow-50" : "hover:bg-gray-50";
+          row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap font-medium">${container.container_number || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${container.company || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${entryDate ? entryDate.toLocaleDateString("pt-BR") : '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${daysIn} dias</td>
+            <td class="px-6 py-4 whitespace-nowrap">${container.deadline_days || 0} dias</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="${statusClass} px-2 py-1 rounded-full text-xs font-medium">${statusText}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="${urgencyClass} font-medium">${container.urgency || '-'}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex space-x-2">
+                <button class="view-details p-2 text-blue-600 hover:bg-blue-100 rounded-full" data-id="${container.id}" aria-label="Visualizar Detalhes">
+                  <i class="fas fa-eye" aria-hidden="true"></i>
+                </button>
+                <button class="edit-container p-2 text-yellow-600 hover:bg-yellow-100 rounded-full" data-id="${container.id}" aria-label="Editar Container">
+                  <i class="fas fa-pencil-alt" aria-hidden="true"></i>
+                </button>
+                <button class="delete-container p-2 text-red-600 hover:bg-red-100 rounded-full" data-id="${container.id}" aria-label="Excluir Container">
+                  <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                </button>
+              </div>
+            </td>
+          `;
+          document.getElementById("containersTableBody").appendChild(row);
+        });
+        document.getElementById("activeContainers").textContent = list.length;
+        document.getElementById("onTimeContainers").textContent = onTimeCount;
+        document.getElementById("warningContainers").textContent = warningCount;
+        document.getElementById("overdueContainers").textContent = overdueCount;
+        document.querySelectorAll(".view-details").forEach(btn => { btn.addEventListener("click", () => { viewDetails(btn.dataset.id); }); });
+        document.querySelectorAll(".edit-container").forEach(btn => { btn.addEventListener("click", () => { editContainer(btn.dataset.id); }); });
+        document.querySelectorAll(".delete-container").forEach(btn => { btn.addEventListener("click", () => { deleteContainer(btn.dataset.id); }); });
+      }
+
+      function populateCompanyDropdown() {
+        document.getElementById("company").innerHTML = "<option value=''>Selecione a empresa</option>";
+        document.getElementById("companyFilter").innerHTML = "<option value='all'>Todas as empresas</option>";
+        companies.forEach(company => {
+          const opt1 = document.createElement("option");
+          opt1.value = company;
+          opt1.textContent = company;
+          document.getElementById("company").appendChild(opt1);
+          const opt2 = document.createElement("option");
+          opt2.value = company;
+          opt2.textContent = company;
+          document.getElementById("companyFilter").appendChild(opt2);
+        });
+      }
+
+      function updateFilePreview() {
+        const container = document.getElementById("filePreviewContainer");
+        container.innerHTML = "";
+        currentFiles.forEach((file, index) => {
+          const preview = document.createElement("div");
+          preview.className = "file-item";
+          preview.innerHTML = `
+            <i class="fas fa-file mr-2"></i>
+            <span>${file.name}</span>
+            <button type="button" class="ml-2 text-red-500" data-index="${index}">
+              <i class="fas fa-times"></i>
+            </button>
+          `;
+          preview.querySelector('button').addEventListener('click', () => {
+            currentFiles.splice(index, 1);
+            updateFilePreview();
+          });
+          container.appendChild(preview);
+        });
+      }
+
+      document.getElementById("fileInput").addEventListener('change', (e) => {
+        const files = Array.from(e.target.files);
+        files.forEach(file => {
+          if (file.size > MAX_FILE_SIZE) {
+            showNotification(`Arquivo ${file.name} excede o tamanho máximo permitido de 5MB.`);
+          } else if (!allowedFileTypes.includes(file.type)) {
+            showNotification(`Tipo de arquivo ${file.type} não permitido para ${file.name}.`);
+          } else {
+            currentFiles.push(file);
+          }
+        });
+        updateFilePreview();
+      });
+
+      document.getElementById("addCompanyBtn").addEventListener("click", (e) => {
+        e.preventDefault();
+        document.getElementById("addCompanyModal").classList.remove("hidden");
+      });
+
+      document.getElementById("cancelAddCompanyBtn").addEventListener("click", () => {
+        document.getElementById("addCompanyModal").classList.add("hidden");
+        document.getElementById("addCompanyForm").reset();
+      });
+
+      document.getElementById("addCompanyForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const companyData = {
+          name: document.getElementById("newCompanyName").value.trim(),
+          notes: document.getElementById("newCompanyNotes").value.trim()
+        };
+        try {
+          await addCompanyToSupabase(companyData);
+          document.getElementById("addCompanyForm").reset();
+          document.getElementById("addCompanyModal").classList.add("hidden");
+        } catch (error) {
+          console.error("Erro ao adicionar empresa:", error);
+        }
+      });
+
+      document.getElementById("closeViewDetailsBtn").addEventListener("click", () => {
+        document.getElementById("viewDetailsModal").classList.add("hidden");
+      });
+      document.getElementById("closeViewDetailsBtnBottom").addEventListener("click", () => {
+        document.getElementById("viewDetailsModal").classList.add("hidden");
+      });
+
+      function viewDetails(containerId) {
+        const container = containers.find(c => c.id == containerId);
+        if (!container) return;
+        document.getElementById("viewContainerNumber").textContent = container.container_number || "-";
+        document.getElementById("viewCompany").textContent = container.company || "-";
+        document.getElementById("viewEntryDate").textContent = new Date(container.entry_date).toLocaleDateString("pt-BR") || "-";
+        document.getElementById("viewDeadline").textContent = `${container.deadline_days || 0} dias`;
+        document.getElementById("viewStatus").textContent = container.status || "-";
+        document.getElementById("viewUrgency").textContent = container.urgency || "-";
+        document.getElementById("viewNotes").textContent = container.notes || "-";
+        const viewFiles = document.getElementById("viewFiles");
+        viewFiles.innerHTML = '';
+        if (container.files && container.files.length > 0) {
+          container.files.forEach(file => {
+            const fileDiv = document.createElement("div");
+            fileDiv.className = "bg-gray-100 rounded p-2 flex items-center gap-2";
+            fileDiv.innerHTML = `
+              <i class="fas fa-file text-gray-500"></i>
+              <a href="${file.url}" target="_blank" class="text-blue-600 hover:underline">${file.name}</a>
+              <span class="text-sm text-gray-500">(${(file.size/1024).toFixed(1)}KB)</span>
+            `;
+            viewFiles.appendChild(fileDiv);
+          });
+        } else {
+          viewFiles.innerHTML = "<p class='text-gray-500'>Nenhum arquivo anexado</p>";
+        }
+        document.getElementById("viewDetailsModal").classList.remove("hidden");
+      }
+
+      document.getElementById("containerForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Carregando...";
+        if (!document.getElementById("company").value) {
+          showNotification("Selecione uma empresa.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = document.getElementById("containerId").value ? "Atualizar Container" : "Salvar Container";
+          return;
+        }
+        const containerData = {
+          id: document.getElementById("containerId").value || undefined,
+          company: document.getElementById("company").value,
+          container_number: document.getElementById("containerNumber").value,
+          entry_date: document.getElementById("entryDate").value,
+          deadline_days: parseInt(document.getElementById("deadlineDays").value),
+          urgency: document.getElementById("urgency").value,
+          status: document.getElementById("status").value,
+          notes: document.getElementById("notes").value
+        };
+        try {
+          await saveContainerToSupabase(containerData, !!document.getElementById("containerId").value);
+          document.getElementById("containerModal").classList.add("hidden");
+          resetContainerForm();
+        } catch (error) {
+          console.error("Error in form submission:", error);
+        }
+        submitBtn.disabled = false;
+        submitBtn.textContent = document.getElementById("containerId").value ? "Atualizar Container" : "Salvar Container";
+      });
+
+      function editContainer(containerId) {
+        const container = containers.find(c => c.id == containerId);
+        if (!container) return;
+        document.getElementById("containerId").value = container.id;
+        document.getElementById("company").value = container.company;
+        document.getElementById("containerNumber").value = container.container_number;
+        document.getElementById("entryDate").value = container.entry_date;
+        document.getElementById("deadlineDays").value = container.deadline_days;
+        document.getElementById("urgency").value = container.urgency;
+        document.getElementById("status").value = container.status;
+        document.getElementById("notes").value = container.notes || "";
+        document.getElementById("filePreviewContainer").innerHTML = '';
+        currentFiles = [];
+        const modalTitleElem = document.getElementById("modalTitle");
+        if (modalTitleElem) {
+          modalTitleElem.textContent = "Editar Container";
+        } else {
+          console.error("Elemento modalTitle não encontrado");
+        }
+        const submitButtonTextElem = document.getElementById("submitButtonText");
+        if (submitButtonTextElem) {
+          submitButtonTextElem.textContent = "Atualizar Container";
+        } else {
+          console.error("Elemento submitButtonText não encontrado");
+        }
+        document.getElementById("containerModal").classList.remove("hidden");
+      }
+
+      async function deleteContainerFromSupabase(containerId) {
+        try {
+          const { error } = await supabase
+            .from('containers')
+            .delete()
+            .eq('id', containerId);
+          if (error) throw error;
+          await fetchContainers();
+          showNotification("Container excluído com sucesso!");
+        } catch (error) {
+          console.error("Error deleting container:", error);
+          showNotification("Erro ao excluir container: " + error.message);
+          throw error;
+        }
+      }
+
+      function deleteContainer(containerId) {
+        if (!confirm("Tem certeza que deseja excluir este container?")) return;
+        deleteContainerFromSupabase(containerId);
+      }
+
+      function filterContainers() {
+        const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+        const statusValue = document.getElementById("statusFilter").value;
+        const companyValue = document.getElementById("companyFilter").value;
+        const urgencyValue = document.getElementById("urgencyFilter").value;
+        const filtered = containers.filter(container => {
+          const matchesSearch = container.container_number.toLowerCase().includes(searchTerm) || container.company.toLowerCase().includes(searchTerm);
+          const matchesStatus = statusValue === "all" || container.status.toLowerCase() === statusValue;
+          const matchesCompany = companyValue === "all" || container.company === companyValue;
+          const matchesUrgency = urgencyValue === "all" || container.urgency === urgencyValue;
+          return matchesSearch && matchesStatus && matchesCompany && matchesUrgency;
+        });
+        renderContainers(filtered);
+      }
+
+      document.getElementById("searchInput").addEventListener("input", filterContainers);
+      document.getElementById("statusFilter").addEventListener("change", filterContainers);
+      document.getElementById("companyFilter").addEventListener("change", filterContainers);
+      document.getElementById("urgencyFilter").addEventListener("change", filterContainers);
+
+      function resetContainerForm() {
+        document.getElementById("containerForm").reset();
+        document.getElementById("containerId").value = '';
+        document.getElementById("filePreviewContainer").innerHTML = '';
+        currentFiles = [];
+        const modalTitleElem = document.getElementById("modalTitle");
+        if (modalTitleElem) {
+          modalTitleElem.textContent = "Adicionar Novo Container";
+        }
+        const submitButtonTextElem = document.getElementById("submitButtonText");
+        if (submitButtonTextElem) {
+          submitButtonTextElem.textContent = "Salvar Container";
+        }
+      }
+
+      document.getElementById("addContainerBtn").addEventListener('click', () => {
+        document.getElementById("containerModal").classList.remove('hidden');
+        resetContainerForm();
+      });
+      document.getElementById("addContainerFab").addEventListener('click', () => {
+        document.getElementById("containerModal").classList.remove('hidden');
+        resetContainerForm();
+      });
+      document.getElementById("closeModalBtn").addEventListener('click', () => {
+        document.getElementById("containerModal").classList.add('hidden');
+      });
+      document.getElementById("cancelModalBtn").addEventListener('click', () => {
+        document.getElementById("containerModal").classList.add('hidden');
+      });
+
+      // EVENTOS PARA OS MODAIS DE RECUPERAÇÃO DE SENHA E CRIAÇÃO DE CONTA
+
+      // Botão "Criar" do modal Criar Conta
+      const createAccountBtn = document.getElementById("createAccountBtn");
+      if (createAccountBtn) {
+        createAccountBtn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          const name = document.getElementById("name").value.trim();
+          const email = document.getElementById("newEmail").value.trim();
+          const password = document.getElementById("newPassword").value;
+          if (!name || !email || !password) {
+            showNotification("Preencha todos os campos para criar a conta.");
+            return;
+          }
+          const user = await signUpUser(email, password, name);
+          if (user) {
+            closeCreateAccount();
+          }
+        });
+      }
+
+      // Botão "Enviar" do modal Recuperar Senha
+      const resetPasswordBtn = document.getElementById("resetPasswordBtn");
+      if (resetPasswordBtn) {
+        resetPasswordBtn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          const email = document.getElementById("resetEmail").value.trim();
+          if (!email) {
+            showNotification("Preencha seu email para recuperar a senha.");
+            return;
+          }
+          const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+          if (error) {
+            showNotification("Erro ao enviar email de recuperação: " + error.message);
+          } else {
+            showNotification("Email de recuperação enviado! Verifique sua caixa de entrada.");
+            closeForgotPassword();
+          }
+        });
+      }
+
+      // Função para alternar a visibilidade do dropdown de notificações (Mobile)
+      function toggleNotificationsDropdownMobile() {
+        const dropdown = document.getElementById('notificationsDropdown');
+        dropdown.classList.toggle('active');
+      }
+      // Adicionar um ouvinte de evento de clique ao botão de notificações (Mobile)
+      const notificationsBtnMobile = document.getElementById('notificationsBtnMobile');
+      if (notificationsBtnMobile) {
+        notificationsBtnMobile.addEventListener('click', toggleNotificationsDropdownMobile);
+      } else {
+        console.warn('notificationsBtnMobile não encontrado!');
+      }
+
+      // Função para alternar a visibilidade do dropdown de notificações (Desktop)
+      function toggleNotificationsDropdown() {
+        const dropdown = document.getElementById('notificationsDropdown');
+        dropdown.classList.toggle('active');
+      }
+
+      document.getElementById('notificationsBtn').addEventListener('click', toggleNotificationsDropdown);
+
+      initializeApp();
+    })();
+  </script>
+
+  <!-- FUNÇÕES GLOBAIS PARA OS MODAIS DE RECUPERAÇÃO E CRIAÇÃO DE CONTA -->
+  <script>
+    function showForgotPassword() {
+      // Oculta o modal de login para exibir o modal de recuperação
+      document.getElementById('forgotPasswordModal').classList.remove('hidden');
+    }
+    function closeForgotPassword() {
+      document.getElementById('forgotPasswordModal').classList.add('hidden');
+    }
+    function showCreateAccount() {
+      // Oculta o modal de login para exibir o modal de criar conta
+      document.getElementById('createAccountModal').classList.remove('hidden');
+    }
+    function closeCreateAccount() {
+      document.getElementById('createAccountModal').classList.add('hidden');
+    }
+  </script>
 </body>
-
 </html>
